@@ -43,8 +43,9 @@ export const LiveAssistant: React.FC = () => {
       setIsConnecting(true);
       const ai = createGenAI();
       
-      const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      // Using modern standard AudioContext
+      const inputCtx = new AudioContext({ sampleRate: 16000 });
+      const outputCtx = new AudioContext({ sampleRate: 24000 });
       
       audioContextRef.current = inputCtx;
       outputAudioContextRef.current = outputCtx;
@@ -84,7 +85,6 @@ export const LiveAssistant: React.FC = () => {
             scriptProcessor.connect(inputCtx.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
-            // Audio Output handling
             const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
             if (base64Audio) {
               const outCtx = outputAudioContextRef.current!;
@@ -104,7 +104,6 @@ export const LiveAssistant: React.FC = () => {
               sourcesRef.current.add(source);
             }
 
-            // Transcription handling
             if (message.serverContent?.inputTranscription) {
               setTranscript(prev => [...prev, `You: ${message.serverContent.inputTranscription.text}`]);
             }
@@ -200,7 +199,6 @@ export const LiveAssistant: React.FC = () => {
         </div>
       ) : (
         <div className="flex flex-col items-end gap-3 group">
-          {/* Action Trigger Tooltip */}
           <div className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 pointer-events-none mb-1 shadow-xl">
              Need help? Ask Ayush
           </div>
@@ -219,7 +217,6 @@ export const LiveAssistant: React.FC = () => {
             )}
           </button>
           
-          {/* Additional text button as requested */}
           {!isConnecting && (
             <button 
               onClick={startSession}
