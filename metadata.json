@@ -1,0 +1,7 @@
+{
+  "name": "AyushData - Blood & Stem Cell Platform",
+  "description": "A comprehensive blood and stem cell donation management system featuring real-time tracking, scheduling, and an AI-powered voice assistant for donor support.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
