@@ -16,6 +16,13 @@ export enum BloodType {
   O_NEGATIVE = 'O-'
 }
 
+export interface CallRecord {
+  id: string;
+  timestamp: string;
+  summary: string;
+  duration?: string;
+}
+
 export interface Donor {
   id: string;
   name: string;

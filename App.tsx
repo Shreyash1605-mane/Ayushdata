@@ -286,7 +286,7 @@ const App: React.FC = () => {
         {currentPage === 'donor-dashboard' && currentUser && <DonorDashboard user={currentUser} />}
       </main>
 
-      <LiveAssistant />
+      <LiveAssistant userMobile={currentUser?.mobile} />
 
       <footer className="bg-white py-24 border-t border-slate-100 mt-auto no-print">
         <div className="max-w-7xl mx-auto px-4 grid lg:grid-cols-4 gap-16">

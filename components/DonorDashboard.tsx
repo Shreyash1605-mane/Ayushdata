@@ -21,10 +21,12 @@ import {
   ChevronDown,
   ChevronUp,
   Building,
-  Info
+  Info,
+  MessageSquare,
+  Headphones
 } from 'lucide-react';
 import { RegisteredUser, realtimeDb, PastDonation } from '../services/realtimeStore';
-import { DonationType } from '../types';
+import { DonationType, CallRecord } from '../types';
 
 interface DonorDashboardProps {
   user: RegisteredUser;
@@ -34,6 +36,7 @@ export const DonorDashboard: React.FC<DonorDashboardProps> = ({ user }) => {
   const [dbUser, setDbUser] = useState<RegisteredUser>(user);
   const [eligibility, setEligibility] = useState({ ready: true, daysLeft: 0, percentage: 100 });
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+  const [isCallsExpanded, setIsCallsExpanded] = useState(false);
 
   useEffect(() => {
     const unsubscribe = realtimeDb.subscribe(() => {
@@ -81,6 +84,12 @@ export const DonorDashboard: React.FC<DonorDashboardProps> = ({ user }) => {
 
   const hasMoreHistory = (dbUser.history?.length || 0) > 3;
 
+  const visibleCalls = isCallsExpanded
+    ? dbUser.calls
+    : dbUser.calls?.slice(0, 3);
+
+  const hasMoreCalls = (dbUser.calls?.length || 0) > 3;
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 space-y-12 animate-in fade-in duration-700">
       {/* Header Profile Section */}
@@ -113,7 +122,7 @@ export const DonorDashboard: React.FC<DonorDashboardProps> = ({ user }) => {
 
       <div className="grid lg:grid-cols-3 gap-8 no-print">
         {/* Eligibility Card */}
-        <div className="glass-card bg-white p-8 rounded-[40px] shadow-sm space-y-8 border border-slate-50">
+        <div className="glass-card bg-white p-8 rounded-[40px] shadow-sm space-y-8 border border-slate-50 h-fit">
            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
              <Activity className="w-4 h-4 text-red-600" /> Readiness Status
            </h3>
@@ -149,78 +158,115 @@ export const DonorDashboard: React.FC<DonorDashboardProps> = ({ user }) => {
            </div>
         </div>
 
-        {/* History Timeline Card */}
-        <div className="lg:col-span-2 glass-card bg-white p-8 rounded-[40px] shadow-sm border border-slate-50 overflow-hidden relative">
-           <div className="flex justify-between items-center mb-10">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <History className="w-4 h-4 text-red-600" /> Donation Timeline
-              </h3>
-              <div className="flex gap-2">
-                <div className="px-3 py-1 bg-slate-50 rounded-lg text-[8px] font-black text-slate-400 uppercase tracking-widest">Total: {dbUser.history?.length || 0} Impact(s)</div>
+        {/* Combined History Sections */}
+        <div className="lg:col-span-2 space-y-8">
+           {/* Donation Timeline Card */}
+           <div className="glass-card bg-white p-8 rounded-[40px] shadow-sm border border-slate-50 overflow-hidden relative">
+              <div className="flex justify-between items-center mb-10">
+                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                   <History className="w-4 h-4 text-red-600" /> Donation Timeline
+                 </h3>
+                 <div className="px-3 py-1 bg-slate-50 rounded-lg text-[8px] font-black text-slate-400 uppercase tracking-widest">Total: {dbUser.history?.length || 0} Impact(s)</div>
               </div>
+
+              {!dbUser.history || dbUser.history.length === 0 ? (
+                <div className="h-48 flex flex-col items-center justify-center text-center gap-4 border-2 border-dashed border-slate-100 rounded-3xl">
+                   <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                     <Droplet className="w-6 h-6" />
+                   </div>
+                   <p className="text-xs font-bold text-slate-400">Your impact journey is about to begin.</p>
+                </div>
+              ) : (
+                <div className="space-y-6 relative pb-4">
+                   <div className="absolute left-6 top-2 bottom-12 w-1 bg-slate-50 rounded-full -z-0"></div>
+                   
+                   {visibleHistory?.map((item, i) => (
+                     <div key={i} className="flex gap-10 relative animate-in slide-in-from-top-4 duration-300">
+                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center z-10 shadow-lg ${
+                         item.type === DonationType.BLOOD ? 'bg-red-600 text-white' : 
+                         item.type === DonationType.STEM_CELL ? 'bg-slate-900 text-white' : 'bg-blue-500 text-white'
+                       }`}>
+                         <Droplet className="w-6 h-6" />
+                       </div>
+                       <div className="flex-1 bg-slate-50/50 p-6 rounded-[28px] border border-slate-100 group relative">
+                          <div className="flex justify-between items-start">
+                             <div>
+                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Impact Type</p>
+                               <h4 className="font-black text-slate-900 mt-1">{item.type.replace('_', ' ')}</h4>
+                             </div>
+                             <div className="text-right">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Impact Date</p>
+                                <p className="text-xs font-bold text-slate-700">{item.date}</p>
+                             </div>
+                          </div>
+                       </div>
+                     </div>
+                   ))}
+
+                   {hasMoreHistory && (
+                     <div className="pl-20 pt-2">
+                       <button onClick={() => setIsHistoryExpanded(!isHistoryExpanded)} className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 hover:text-red-600 transition-colors">
+                         {isHistoryExpanded ? <>Show Less <ChevronUp className="w-3 h-3" /></> : <>View All History <ChevronDown className="w-3 h-3" /></>}
+                       </button>
+                     </div>
+                   )}
+                </div>
+              )}
            </div>
 
-           {!dbUser.history || dbUser.history.length === 0 ? (
-             <div className="h-64 flex flex-col items-center justify-center text-center gap-4 border-2 border-dashed border-slate-100 rounded-3xl">
-                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
-                  <Droplet className="w-8 h-8" />
-                </div>
-                <p className="text-sm font-bold text-slate-400">Your impact journey is about to begin.</p>
-             </div>
-           ) : (
-             <div className="space-y-6 relative pb-4">
-                {/* Visual Line */}
-                <div className="absolute left-6 top-2 bottom-20 w-1 bg-slate-50 rounded-full -z-0"></div>
-                
-                {visibleHistory?.map((item, i) => (
-                  <div key={i} className="flex gap-10 relative animate-in slide-in-from-top-4 duration-300">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center z-10 transition-transform hover:scale-110 shadow-lg ${
-                      item.type === DonationType.BLOOD ? 'bg-red-600 text-white' : 
-                      item.type === DonationType.STEM_CELL ? 'bg-slate-900 text-white' : 'bg-blue-500 text-white'
-                    }`}>
-                      <Droplet className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1 bg-slate-50/50 p-6 rounded-[28px] border border-slate-100 hover:border-red-100 transition-all group relative">
-                       <div className="flex justify-between items-start mb-2">
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Impact Type</p>
-                            <h4 className="font-black text-slate-900 group-hover:text-red-600 transition-colors flex items-center gap-2">
-                                {item.type.replace('_', ' ')}
-                                <div title={`${item.date} at ${item.time || '10:00 AM'}`} className="cursor-help">
-                                    <Info className="w-3 h-3 text-slate-300 hover:text-slate-900" />
-                                </div>
-                            </h4>
-                          </div>
-                          <div className="text-right">
-                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Impact Date</p>
-                             <p className="text-xs font-bold text-slate-700">{item.date}</p>
-                          </div>
-                       </div>
-                       
-                       <div className="flex items-center gap-2 mt-4 text-[10px] font-bold text-slate-500">
-                          <Building className="w-3 h-3 text-red-500" />
-                          <span className="uppercase tracking-widest">{item.location || 'Verified Network Partner'}</span>
-                       </div>
-                    </div>
-                  </div>
-                ))}
+           {/* Call History Card */}
+           <div className="glass-card bg-white p-8 rounded-[40px] shadow-sm border border-slate-50 overflow-hidden relative">
+              <div className="flex justify-between items-center mb-10">
+                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                   <Headphones className="w-4 h-4 text-blue-500" /> AI Assistant Interactions
+                 </h3>
+                 <div className="px-3 py-1 bg-slate-50 rounded-lg text-[8px] font-black text-slate-400 uppercase tracking-widest">Total: {dbUser.calls?.length || 0} Call(s)</div>
+              </div>
 
-                {hasMoreHistory && (
-                  <div className="pl-20 pt-4">
-                    <button 
-                      onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
-                      className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-600 transition-colors group/btn"
-                    >
-                      {isHistoryExpanded ? (
-                        <>Show Less <ChevronUp className="w-3 h-3 group-hover/btn:-translate-y-0.5 transition-transform" /></>
-                      ) : (
-                        <>View All History <ChevronDown className="w-3 h-3 group-hover/btn:translate-y-0.5 transition-transform" /></>
-                      )}
-                    </button>
-                  </div>
-                )}
-             </div>
-           )}
+              {!dbUser.calls || dbUser.calls.length === 0 ? (
+                <div className="h-48 flex flex-col items-center justify-center text-center gap-4 border-2 border-dashed border-slate-100 rounded-3xl">
+                   <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                     <MessageSquare className="w-6 h-6" />
+                   </div>
+                   <p className="text-xs font-bold text-slate-400">No AI consultation history yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-6 relative pb-4">
+                   <div className="absolute left-6 top-2 bottom-12 w-1 bg-slate-50 rounded-full -z-0"></div>
+                   
+                   {visibleCalls?.map((call, i) => (
+                     <div key={call.id} className="flex gap-10 relative animate-in slide-in-from-top-4 duration-300">
+                       <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center z-10 shadow-lg border border-blue-100">
+                         <MessageSquare className="w-6 h-6" />
+                       </div>
+                       <div className="flex-1 bg-blue-50/20 p-6 rounded-[28px] border border-blue-100/50 group relative">
+                          <div className="flex justify-between items-start mb-2">
+                             <div className="space-y-1">
+                               <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest leading-none">AI Log ID</p>
+                               <h4 className="font-black text-slate-900">{call.id}</h4>
+                             </div>
+                             <div className="text-right">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Timestamp</p>
+                                <p className="text-xs font-bold text-slate-700">{call.timestamp.split(',')[0]}</p>
+                             </div>
+                          </div>
+                          <p className="text-xs font-medium text-slate-600 mt-2 italic leading-relaxed">
+                            "{call.summary}"
+                          </p>
+                       </div>
+                     </div>
+                   ))}
+
+                   {hasMoreCalls && (
+                     <div className="pl-20 pt-2">
+                       <button onClick={() => setIsCallsExpanded(!isCallsExpanded)} className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 hover:text-blue-600 transition-colors">
+                         {isCallsExpanded ? <>Show Less <ChevronUp className="w-3 h-3" /></> : <>View All Calls <ChevronDown className="w-3 h-3" /></>}
+                       </button>
+                     </div>
+                   )}
+                </div>
+              )}
+           </div>
         </div>
       </div>
 

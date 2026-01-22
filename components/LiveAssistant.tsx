@@ -10,8 +10,13 @@ import {
   encode
 } from '../services/geminiService';
 import { Mic, MicOff, Phone, X, Volume2, Waves, MessageSquare, Headphones } from 'lucide-react';
+import { realtimeDb } from '../services/realtimeStore';
 
-export const LiveAssistant: React.FC = () => {
+interface LiveAssistantProps {
+  userMobile?: string;
+}
+
+export const LiveAssistant: React.FC<LiveAssistantProps> = ({ userMobile }) => {
   const [isActive, setIsActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [transcript, setTranscript] = useState<string[]>([]);
@@ -22,8 +27,14 @@ export const LiveAssistant: React.FC = () => {
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const nextStartTimeRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
+  const transcriptRef = useRef<string[]>([]);
 
-  const stopSession = useCallback(() => {
+  // Update ref when state changes so stopSession can use current transcript
+  useEffect(() => {
+    transcriptRef.current = transcript;
+  }, [transcript]);
+
+  const stopSession = useCallback(async () => {
     if (sessionRef.current) {
       sessionRef.current.close?.();
     }
@@ -33,17 +44,37 @@ export const LiveAssistant: React.FC = () => {
     if (audioContextRef.current) audioContextRef.current.close();
     if (outputAudioContextRef.current) outputAudioContextRef.current.close();
     
+    // Summary logic: if there's an active user and a conversation happened
+    if (userMobile && transcriptRef.current.length > 1) {
+      try {
+        const ai = createGenAI();
+        const summaryResponse = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: `Provide a very short, one-sentence professional summary for a medical dashboard history of this conversation between a donor and an AI assistant named Ayush: ${transcriptRef.current.join('\n')}`,
+        });
+        
+        const summary = summaryResponse.text?.trim() || "Consulted Ayush Assistant regarding donation.";
+        
+        realtimeDb.addCallRecord(userMobile, {
+          id: `CALL-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+          timestamp: new Date().toLocaleString(),
+          summary: summary
+        });
+      } catch (err) {
+        console.error("Failed to generate call summary:", err);
+      }
+    }
+
     setIsActive(false);
     setIsConnecting(false);
     setTranscript(prev => [...prev, "[Session Ended]"]);
-  }, []);
+  }, [userMobile]);
 
   const startSession = async () => {
     try {
       setIsConnecting(true);
       const ai = createGenAI();
       
-      // Using modern standard AudioContext
       const inputCtx = new AudioContext({ sampleRate: 16000 });
       const outputCtx = new AudioContext({ sampleRate: 24000 });
       

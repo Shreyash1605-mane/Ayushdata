@@ -1,5 +1,5 @@
 
-import { BloodType, DonationType, UrgentRequest, Bank } from '../types';
+import { BloodType, DonationType, UrgentRequest, Bank, CallRecord } from '../types';
 
 // Simulated Realtime Database Store
 const STORE_KEY = 'ayushdata_realtime_store';
@@ -20,6 +20,7 @@ export interface RegisteredUser {
   type: 'donor' | 'bank';
   bloodType?: string;
   history?: PastDonation[];
+  calls?: CallRecord[];
   location?: string;
 }
 
@@ -140,6 +141,17 @@ class RealtimeDatabase {
       user.history = [donation, ...(user.history || [])].sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
+      state.users[userIndex] = user;
+      this.saveState(state);
+    }
+  }
+
+  addCallRecord(mobile: string, call: CallRecord) {
+    const state = this.getState();
+    const userIndex = state.users.findIndex(u => u.mobile === mobile);
+    if (userIndex > -1) {
+      const user = state.users[userIndex];
+      user.calls = [call, ...(user.calls || [])];
       state.users[userIndex] = user;
       this.saveState(state);
     }
