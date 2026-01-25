@@ -23,7 +23,8 @@ import {
   Share2,
   MailCheck,
   Lock,
-  Building
+  Building,
+  QrCode
 } from 'lucide-react';
 import { BloodType, DonationType } from '../types';
 import { realtimeDb, PastDonation } from '../services/realtimeStore';
@@ -199,30 +200,50 @@ export const DonorRegistration: React.FC<{ onComplete: () => void }> = ({ onComp
                <ShieldCheck className="w-24 h-24" />
              </div>
              
-             <div className="flex items-center gap-3 mb-6">
-                <div className="bg-slate-900 p-2 rounded-xl">
-                  <Droplet className="w-5 h-5 text-red-500 fill-red-500" />
+             <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="bg-slate-900 p-2 rounded-xl">
+                    <Droplet className="w-5 h-5 text-red-500 fill-red-500" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-black text-slate-900 tracking-widest block leading-none">AYUSHDATA</span>
+                    <span className="text-[8px] font-black text-red-600 uppercase tracking-widest block mt-1">Life Network Card</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs font-black text-slate-900 tracking-widest block leading-none">AYUSHDATA</span>
-                  <span className="text-[8px] font-black text-red-600 uppercase tracking-widest block mt-1">Life Network Card</span>
+                <div className="bg-white/50 px-3 py-1 rounded-full border border-slate-200">
+                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Verified Registry</span>
                 </div>
              </div>
 
-             <div className="flex justify-between items-start border-b border-slate-200 pb-6">
-               <div>
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</p>
-                 <p className="text-xl font-black text-slate-900">{formData.name}</p>
+             <div className="flex justify-between items-start border-b border-slate-200 pb-8">
+               <div className="space-y-6 flex-1">
+                 <div>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Name</p>
+                   <p className="text-xl font-black text-slate-900">{formData.name}</p>
+                 </div>
                  
-                 <div className="mt-6">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Donor ID</p>
-                   <p className="text-2xl font-black text-red-600 tracking-tighter tabular-nums">{donorId}</p>
+                 <div className="flex items-center gap-6">
+                   <div>
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Donor ID</p>
+                     <p className="text-2xl font-black text-red-600 tracking-tighter tabular-nums">{donorId}</p>
+                   </div>
+                   <div className="flex flex-col items-center gap-1 group">
+                      <div className="p-1.5 bg-white rounded-xl shadow-lg border-2 border-slate-100 transition-transform hover:scale-105">
+                         <img 
+                           src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${donorId}&color=ef4444`} 
+                           alt="Donor QR Verification"
+                           className="w-14 h-14"
+                         />
+                      </div>
+                      <span className="text-[5px] font-black text-slate-400 uppercase tracking-widest">Scan to Verify</span>
+                   </div>
                  </div>
                </div>
                
-               <div className="text-right">
-                 <div className="w-16 h-16 bg-white border-2 border-red-100 rounded-2xl flex items-center justify-center text-red-600 mb-2 shadow-sm">
-                    <span className="text-2xl font-black">{formData.bloodType}</span>
+               <div className="text-right flex flex-col items-end">
+                 <div className="w-20 h-20 bg-white border-2 border-red-100 rounded-[28px] flex items-center justify-center text-red-600 mb-2 shadow-sm relative group overflow-hidden">
+                    <div className="absolute inset-0 bg-red-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <span className="text-3xl font-black relative z-10 group-hover:text-white transition-colors">{formData.bloodType}</span>
                  </div>
                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Blood Type</p>
                </div>
